@@ -20,7 +20,7 @@ public class BootstrapAdmin {
         return args -> {
             String adminUsername = "admin";
             if (userRepository.findByUsername(adminUsername).isEmpty()) {
-                String raw = "admin123"; // change this after first login in real use
+                String raw = "admin123";
                 String hash = BCrypt.hashpw(raw, BCrypt.gensalt(10));
                 User admin = User.builder()
                         .username(adminUsername)
