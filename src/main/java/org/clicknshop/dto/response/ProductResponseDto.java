@@ -19,4 +19,5 @@ public class ProductResponseDto {
 
     private Integer availableStock;
 
+    private Boolean active;
 }

@@ -63,8 +63,15 @@ public class ProductServiceImp implements ProductService {
         log.info("Suppression du produit avec l'ID: {}", id);
 
         Product product = productRepository.findById(id).orElseThrow(()->new ResourceNotFoundException("Produit introuvable avec l'id " + id)) ;
+        boolean referenced = productRepository.existsInOrderItems(id);
+        if (referenced) {
+            log.info("Produit référencé dans des commandes -> soft-delete (désactivation) du produit id={}", id);
+            product.setActive(false);
+            productRepository.save(product);
+        } else {
 
-        productRepository.delete(product);
+            productRepository.delete(product);
+        }
     }
 
     @Override
@@ -87,6 +94,10 @@ public class ProductServiceImp implements ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Produit introuvable avec l'ID: " + id));
 
         productMapper.updateEntityFromDto(productRequestDto ,product);
+
+        if (productRequestDto.getActive() != null) {
+            product.setActive(productRequestDto.getActive());
+        }
 
         Product updatedProduct = productRepository.save(product);
 

@@ -30,4 +30,5 @@ public class ProductRequestDto {
     @Min(value = 0, message = "Stock cannot be negative")
     private Integer availableStock;
 
+    private Boolean active;
 }
