@@ -1,4 +1,4 @@
 package org.clicknshop.service.implementation;
 
-public class OrderItemServiceImp {
+public class PaymentServiceImp {
 }
