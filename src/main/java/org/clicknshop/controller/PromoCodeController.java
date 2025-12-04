@@ -21,18 +21,6 @@ public class PromoCodeController {
 
     private final PromoCodeService promoCodeService;
 
-    @GetMapping
-    @RequireAuth
-    public ResponseEntity<Page<PromoCodeResponseDto>> list(Pageable pageable) {
-        return ResponseEntity.ok(promoCodeService.findAll(pageable));
-    }
-
-    @GetMapping("/{id}")
-    @RequireAuth
-    public ResponseEntity<PromoCodeResponseDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(promoCodeService.getById(id));
-    }
-
     @PostMapping
     @RequireAuth
     @RequireRole({Role.ADMIN})
@@ -45,6 +33,19 @@ public class PromoCodeController {
     @RequireRole({Role.ADMIN})
     public ResponseEntity<PromoCodeResponseDto> update(@PathVariable Long id, @Valid @RequestBody PromoCodeRequestDto dto) {
         return ResponseEntity.ok(promoCodeService.updateCodePromo(id, dto));
+    }
+
+
+    @GetMapping
+    @RequireAuth
+    public ResponseEntity<Page<PromoCodeResponseDto>> list(Pageable pageable) {
+        return ResponseEntity.ok(promoCodeService.findAll(pageable));
+    }
+
+    @GetMapping("/{id}")
+    @RequireAuth
+    public ResponseEntity<PromoCodeResponseDto> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(promoCodeService.getById(id));
     }
 
     @DeleteMapping("/{id}")

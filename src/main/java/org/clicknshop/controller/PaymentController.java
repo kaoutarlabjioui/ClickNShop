@@ -19,6 +19,7 @@ public class PaymentController {
     @PostMapping
     @RequireAuth
     public ResponseEntity<PaymentResponseDto> addPayment(@PathVariable Long orderId, @Valid @RequestBody PaymentRequestDto dto) {
+
         PaymentResponseDto resp = paymentService.addPayment(orderId, dto);
         return ResponseEntity.status(201).body(resp);
     }

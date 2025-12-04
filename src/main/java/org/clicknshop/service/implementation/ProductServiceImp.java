@@ -37,6 +37,10 @@ public class ProductServiceImp implements ProductService {
 
         Product product = productMapper.toEntity(productRequestDto);
 
+        if(productRequestDto.getActive()==null){
+            product.setActive(true);
+        }
+
         Product savedProduct = productRepository.save(product);
 
         return productMapper.toResponseDto(savedProduct);

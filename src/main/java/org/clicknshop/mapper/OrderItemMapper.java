@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface OrderItemMapper {
 
-    @Mapping(source = "product.id", target = "productId", defaultValue = "0")
+    @Mapping(source = "product.id", target = "productId")
     @Mapping(source = "product.name", target = "productName", defaultValue = "")
     OrderItemResponseDto toDto(OrderItem entity);
 

@@ -1,13 +1,13 @@
 package org.clicknshop.dto.request;
 
-
-
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class OrderItemRequestDto {
     @NotNull(message = "productId requis")

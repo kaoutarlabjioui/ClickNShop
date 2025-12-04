@@ -9,6 +9,7 @@ import org.clicknshop.exception.ResourceNotFoundException;
 import org.clicknshop.mapper.PaymentMapper;
 import org.clicknshop.model.entity.Order;
 import org.clicknshop.model.entity.Payment;
+import org.clicknshop.model.enums.OrderStatus;
 import org.clicknshop.model.enums.PaymentStatus;
 import org.clicknshop.model.enums.PaymentType;
 import org.clicknshop.repository.OrderRepository;
@@ -41,6 +42,24 @@ public class PaymentServiceImp implements PaymentService {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("Le montant du paiement doit être > 0");
         }
+        if(order.getRemainingAmount().compareTo(BigDecimal.ZERO) ==0 || order.getStatus() == OrderStatus.CONFIRMED){
+
+            throw new BusinessException("la commande et deja payé");
+        }
+
+
+        PaymentType paymentType;
+        try {
+            paymentType = PaymentType.valueOf(dto.getPaymentType());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("Type de paiement invalide");
+        }
+
+
+        if (paymentType == PaymentType.CASH && amount.compareTo(PAYMENT_LIMIT) > 0) {
+            throw new BusinessException("Un paiement en espèces ne peut pas dépasser " + PAYMENT_LIMIT + " DH");
+        }
+
 
         if ( amount.compareTo(PAYMENT_LIMIT) > 0 ) {
             throw new BusinessException("Un paiement ne peut pas dépasser " + PAYMENT_LIMIT);

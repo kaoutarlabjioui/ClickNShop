@@ -5,6 +5,7 @@ package org.clicknshop.dto.request;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.clicknshop.model.entity.PromoCode;
 
 import java.util.List;
 
@@ -17,5 +18,5 @@ public class OrderRequestDto {
     private List<OrderItemRequestDto> items;
 
 
-    private String promoCode;
+    private Long promoCode;
 }

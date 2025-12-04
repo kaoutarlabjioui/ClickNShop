@@ -52,7 +52,6 @@
         private LocalDateTime createdAt;
 
         @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
-        @JoinColumn(name = "user_id", referencedColumnName = "id")
-        @NotNull(message = "Le client doit être associé à un utilisateur")
+        @JoinColumn(name = "user_id", referencedColumnName = "id",nullable = true)
         private User user;
     }

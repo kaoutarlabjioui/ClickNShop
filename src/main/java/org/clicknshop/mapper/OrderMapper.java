@@ -13,6 +13,6 @@ public interface OrderMapper {
     @Mapping(source = "promoCode.code", target = "promoCode")
     @Mapping(source = "status", target = "status")
     OrderResponseDto toDto(Order entity);
-
+    @Mapping(target = "promoCode", ignore = true)
     Order toEntity(OrderRequestDto orderRequestDto);
 }

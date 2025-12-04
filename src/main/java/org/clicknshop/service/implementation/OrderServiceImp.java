@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -45,41 +45,43 @@ public class OrderServiceImp implements OrderService {
 
     @Override
     @Transactional
-    public OrderResponseDto createOrder(OrderRequestDto dto){
+    public OrderResponseDto createOrder(OrderRequestDto dto) {
 
         Client client = clientRepository.findById(dto.getClientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Client introuvable"));
 
-        if(dto.getItems() == null || dto.getItems().isEmpty()){
+        if (dto.getItems() == null || dto.getItems().isEmpty()) {
             throw new BusinessException("La commande doit contenir au moins un article");
         }
 
         Order order = new Order();
         order.setCreatedAt(LocalDateTime.now());
+        order.setClient(client);
 
-        BigDecimal subTotal= BigDecimal.ZERO;
 
-        for(OrderItemRequestDto itemReq : dto.getItems()){
+        for (OrderItemRequestDto itemReq : dto.getItems()) {
             Product product = productRepository.findById(itemReq.getProductId())
-                    .orElseThrow(()->new ResourceNotFoundException("Produit non disponible id="+itemReq.getProductId()));
-            if(!product.isActive()){
-                throw new BusinessException("Produit non disponible");
+                    .orElseThrow(() -> new ResourceNotFoundException("Produit non disponible id=" + itemReq.getProductId()));
+
+            if (!product.isActive() ||  product.getAvailableStock() < itemReq.getQuantity()) {
+                String reason = !product.isActive() ? "Produit inactif" : "Stock insuffisant";
+                return saveRejectedOrderAndReturn(order, reason + " pour produit id=" + product.getId());
+
             }
+        }
 
-            if(product.getAvailableStock()<itemReq.getQuantity()){
-                order.setStatus(OrderStatus.REJECTED);
-                orderRepository.save(order);
 
-                throw new BusinessException("Stock insuffisant pour le produit :"+product.getName());
-            }
+        BigDecimal subTotal = BigDecimal.ZERO;
+        for (OrderItemRequestDto itemReq : dto.getItems()) {
+            Product product = productRepository.findById(itemReq.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Produit non disponible id=" + itemReq.getProductId()));
 
-            Integer newStock = product.getAvailableStock()-itemReq.getQuantity();
-            product.setAvailableStock(newStock);
+
+            product.setAvailableStock(product.getAvailableStock() - itemReq.getQuantity());
             productRepository.save(product);
 
-            BigDecimal unitPrice = product.getUnitPrice();
-            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity()));
-
+            BigDecimal unitPrice = product.getUnitPrice().setScale(2, java.math.RoundingMode.HALF_UP);
+            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity())).setScale(2, java.math.RoundingMode.HALF_UP);
             subTotal = subTotal.add(lineTotal);
 
             OrderItem orderItem = OrderItem.builder()
@@ -91,47 +93,46 @@ public class OrderServiceImp implements OrderService {
                     .build();
 
             order.getItems().add(orderItem);
+        }
 
+
+        double loyaltyPct = computeLoyaltyPercentage(client.getLoyaltyLevel(), subTotal);
+        BigDecimal loyaltyDiscount = subTotal.multiply(BigDecimal.valueOf(loyaltyPct / 100.0)).setScale(2, java.math.RoundingMode.HALF_UP);
+
+        BigDecimal promoDiscount = BigDecimal.ZERO;
+        PromoCode appliedPromo = null;
+
+
+        if(dto.getPromoCode() != null){
+            appliedPromo = promoCodeRepository.findById(dto.getPromoCode())
+                    .orElseThrow(()->new BusinessException("Code promo invalide"));
+            if (!appliedPromo.isActive()) {
+                throw new BusinessException("Code promo inactif");
+            }
+
+
+            BigDecimal baseForPromo = subTotal.subtract(loyaltyDiscount).max(BigDecimal.ZERO);
+            promoDiscount = baseForPromo.multiply(BigDecimal.valueOf(appliedPromo.getDiscountPercentage() / 100.0))
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
 
         }
 
-    double loyaltyPct = computeLoyaltyPercentage(client.getLoyaltyLevel(),subTotal);
-     BigDecimal loyaltyDiscount = subTotal.multiply(BigDecimal.valueOf(loyaltyPct/100.0));
+        BigDecimal totalDiscount = loyaltyDiscount.add(promoDiscount).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal htAfter = subTotal.subtract(totalDiscount).max(BigDecimal.ZERO).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal tax = htAfter.multiply(BigDecimal.valueOf(taxRate / 100.0)).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal totalTtc = htAfter.add(tax).setScale(2, java.math.RoundingMode.HALF_UP);
 
-     BigDecimal promoDiscount = BigDecimal.ZERO;
-     PromoCode appliedPromo = null;
-
-     if(dto.getPromoCode() !=null && !dto.getPromoCode().isBlank()){
-         appliedPromo = promoCodeRepository.findByCodeAndDeletedFalse(dto.getPromoCode().toUpperCase())
-                 .orElseThrow(() -> new BusinessException("Code promo invalide"));
-
-         if (!appliedPromo.isActive()) {
-             throw new BusinessException("Code promo inactif");
-         }
-
-     }
-
-     BigDecimal baseForPromo = subTotal.subtract(loyaltyDiscount);
-     promoDiscount = baseForPromo.multiply(BigDecimal.valueOf(appliedPromo.getDiscountPercentage()/100.0));
-
-        BigDecimal totalDiscount = loyaltyDiscount.add(promoDiscount);
-        BigDecimal htAfter = subTotal.subtract(totalDiscount).max(BigDecimal.ZERO);
-        BigDecimal tax = htAfter.multiply(BigDecimal.valueOf(taxRate / 100.0));
-        BigDecimal totalTtc = htAfter.add(tax);
-
-        order.setSubTotalHt(subTotal);
+        order.setSubTotalHt(subTotal.setScale(2, java.math.RoundingMode.HALF_UP));
         order.setDiscountAmount(totalDiscount);
         order.setHtAfterDiscount(htAfter);
         order.setTaxAmount(tax);
         order.setTotalTtc(totalTtc);
         order.setRemainingAmount(totalTtc);
         order.setStatus(OrderStatus.PENDING);
-        order.setClient(client);
         order.setPromoCode(appliedPromo);
+
         Order saved = orderRepository.save(order);
-
         return orderMapper.toDto(saved);
-
     }
 
     @Override
@@ -249,6 +250,21 @@ public class OrderServiceImp implements OrderService {
         if (totalOrders >= 10 || totalSpent.compareTo(BigDecimal.valueOf(5000)) >= 0) return CustomerTier.GOLD;
         if (totalOrders >= 3 || totalSpent.compareTo(BigDecimal.valueOf(1000)) >= 0) return CustomerTier.SILVER;
         return CustomerTier.BASIC;
+    }
+
+
+    private OrderResponseDto saveRejectedOrderAndReturn(Order order, String reason) {
+        log.warn("Commande rejetée: {}", reason);
+        order.setStatus(OrderStatus.REJECTED);
+        order.setSubTotalHt(BigDecimal.ZERO);
+        order.setDiscountAmount(BigDecimal.ZERO);
+        order.setHtAfterDiscount(BigDecimal.ZERO);
+        order.setTaxAmount(BigDecimal.ZERO);
+        order.setTotalTtc(BigDecimal.ZERO);
+        order.setRemainingAmount(BigDecimal.ZERO);
+        order.setPromoCode(null);
+        Order saved = orderRepository.save(order);
+        return orderMapper.toDto(saved);
     }
 
 
