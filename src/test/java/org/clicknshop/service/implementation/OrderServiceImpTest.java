@@ -32,13 +32,20 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class OrderServiceImpTest {
 
-    @Mock private ClientRepository clientRepository;
-    @Mock private ProductRepository productRepository;
-    @Mock private PromoCodeRepository promoCodeRepository;
-    @Mock private OrderRepository orderRepository;
-    @Mock private OrderMapper orderMapper;
-    @Mock private org.clicknshop.service.PromoCodeService promoCodeService;
-    @Mock private PaymentRepository paymentRepository;
+    @Mock
+    private ClientRepository clientRepository;
+    @Mock
+    private ProductRepository productRepository;
+    @Mock
+    private PromoCodeRepository promoCodeRepository;
+    @Mock
+    private OrderRepository orderRepository;
+    @Mock
+    private OrderMapper orderMapper;
+    @Mock
+    private org.clicknshop.service.PromoCodeService promoCodeService;
+    @Mock
+    private PaymentRepository paymentRepository;
 
     @InjectMocks
     private OrderServiceImp orderService;

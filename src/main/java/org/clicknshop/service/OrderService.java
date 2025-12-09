@@ -13,6 +13,7 @@ public interface OrderService {
     OrderResponseDto getById(Long id);
 
     Page<OrderResponseDto> getOrdersByClient(Long clientId, Pageable pageable);
+    Page<OrderResponseDto> getOrdersForCurrentUser(Pageable pageable);
 
     OrderResponseDto confirmOrder(Long id);
 

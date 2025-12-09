@@ -7,7 +7,12 @@ import org.clicknshop.dto.response.ProductResponseDto;
 import org.clicknshop.exception.DuplicateResourceException;
 import org.clicknshop.exception.ResourceNotFoundException;
 import org.clicknshop.mapper.ProductMapper;
+import org.clicknshop.model.entity.Order;
+import org.clicknshop.model.entity.OrderItem;
 import org.clicknshop.model.entity.Product;
+import org.clicknshop.model.enums.OrderStatus;
+import org.clicknshop.repository.OrderItemRepository;
+import org.clicknshop.repository.OrderRepository;
 import org.clicknshop.repository.ProductRepository;
 import org.clicknshop.service.ProductService;
 import org.springframework.data.domain.Page;
@@ -16,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +32,8 @@ public class ProductServiceImp implements ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final OrderItemRepository orderItemRepository;
+    private final OrderRepository orderRepository;
 
     @Override
     @Transactional
@@ -109,6 +118,18 @@ public class ProductServiceImp implements ProductService {
     }
 
 
+    public List<ProductResponseDto> getProductsOrdred(){
+
+        List<Product> products = productRepository.findAll();
+
+        List<OrderItem> allOrderItems = orderItemRepository.findAll();
+
+        Set<Long> ordredProductId = allOrderItems.stream().map(oi->oi.getProduct().getId()).collect(Collectors.toSet());
+
+        return products.stream().filter(p-> ordredProductId.contains(p.getId())).map(productMapper::toResponseDto).toList();
+
+
+    }
 
 
 }

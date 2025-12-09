@@ -40,6 +40,8 @@ public class OrderServiceImp implements OrderService {
     private final OrderMapper orderMapper;
     private final PromoCodeService promoCodeService;
     private final PaymentRepository paymentRepository;
+    private final UserContext userContext;
+
     @Value("${tax.rate:20}")
     private double taxRate;
 
@@ -115,6 +117,8 @@ public class OrderServiceImp implements OrderService {
             promoDiscount = baseForPromo.multiply(BigDecimal.valueOf(appliedPromo.getDiscountPercentage() / 100.0))
                     .setScale(2, java.math.RoundingMode.HALF_UP);
 
+          appliedPromo.setActive(false);
+          promoCodeRepository.save(appliedPromo);
         }
 
         BigDecimal totalDiscount = loyaltyDiscount.add(promoDiscount).setScale(2, java.math.RoundingMode.HALF_UP);
@@ -130,6 +134,7 @@ public class OrderServiceImp implements OrderService {
         order.setRemainingAmount(totalTtc);
         order.setStatus(OrderStatus.PENDING);
         order.setPromoCode(appliedPromo);
+
 
         Order saved = orderRepository.save(order);
         return orderMapper.toDto(saved);
@@ -148,6 +153,12 @@ public class OrderServiceImp implements OrderService {
     public Page<OrderResponseDto> getOrdersByClient(Long clientId, Pageable pageable) {
         Page<Order> page = orderRepository.findByClientId(clientId, pageable);
         return page.map(orderMapper::toDto);
+    }
+
+    @Override
+    public Page<OrderResponseDto> getOrdersForCurrentUser(Pageable pageable) {
+        Client client = resolveClientFromContext();
+        return getOrdersByClient(client.getId(), pageable);
     }
 
 
@@ -267,5 +278,16 @@ public class OrderServiceImp implements OrderService {
         return orderMapper.toDto(saved);
     }
 
+    private Client resolveClientFromContext() {
+        User current = userContext.getCurrentUser();
+        if (current == null) {
+            log.warn("Utilisateur non authentifié (UserContext vide)");
+            throw new ResourceNotFoundException("Utilisateur non authentifié");
+        }
+
+        Long userId = current.getId();
+        return clientRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Client lié à l'utilisateur introuvable"));
+    }
 
 }

@@ -8,6 +8,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring", uses = { UserMapper.class })
 public interface ClientMapper {
 
@@ -15,6 +17,7 @@ public interface ClientMapper {
     @Mapping(source = "user", target = "user")
     ClientResponseDto toDto(Client entity);
 
+    List<ClientResponseDto> toDto(List<Client> entities);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", expression = "java(java.time.LocalDateTime.now())")
