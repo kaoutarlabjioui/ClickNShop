@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -130,6 +131,40 @@ public class ProductServiceImp implements ProductService {
 
 
     }
+
+
+
+    public List<ProductResponseDto> productsOrderedAndPriceAbove1000(){
+
+        List<Order> orders = orderRepository.findAll();
+
+
+        return orders.stream().filter(o->o.getStatus()==OrderStatus.CONFIRMED)
+                .flatMap(o->o.getItems().stream())
+                .map(oi->oi.getProduct())
+                .distinct()
+                .filter(p-> p.getUnitPrice().compareTo(BigDecimal.valueOf(1000.00))>0)
+                .map(productMapper::toResponseDto).toList();
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }
