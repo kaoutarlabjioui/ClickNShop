@@ -10,7 +10,7 @@ public class ClickNShopApplication {
 	public static void main(String[] args) {
 
         Dotenv dotenv = Dotenv.configure()
-                .ignoreIfMissing()   // optionnel
+                .ignoreIfMissing()
                 .load();
 
         System.setProperty("DB_URL", dotenv.get("DB_URL"));
